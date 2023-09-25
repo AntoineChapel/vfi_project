@@ -3,7 +3,7 @@
 #include <vector>
 #include <chrono>
 #include <functional>
-
+#include <omp.h>
 
 std::vector<double> linspace(double start, double end, int n);
 void print_matrix(std::vector<std::vector<double>> matrix);
@@ -25,9 +25,9 @@ int main(){
   double tol = 1e-6;
   int maxiter = 1000;
 
-  double kmin = 1.0d;
-  double kmax = 25.0d;
-  int prec = 500;
+  double kmin = 1.0;
+  double kmax = 25.0;
+  int prec = 1000;
   static std::vector<double> kgrid(prec);
   std::vector<double> gk(prec, 1);
   std::vector<double> Vk(prec, 1);
@@ -37,12 +37,14 @@ int main(){
   std::vector<double> value_array_rowiprim(prec);
 
   int n_iter = 0;
+  int argmax_k;
   double k, kprim, c, kstar;
   double norm = 1e5;
 
   kgrid = linspace(kmin, kmax, prec);
 
   while (n_iter < maxiter && norm > tol){
+    #pragma omp parallel for private(k, c, kprim)
     for (int iprim = 0; iprim < prec; iprim++){
       kprim = kgrid[iprim];
       for (int i = 0; i < prec; i++){
@@ -56,7 +58,7 @@ int main(){
         }
       }
     }
-
+    #pragma omp parallel for private(argmax_k)
     for (int rownum = 0; rownum < prec; rownum++){
       int argmax_k = argmax(value_array[rownum]); 
       gk[rownum] = kgrid[argmax_k];
@@ -95,7 +97,7 @@ std::vector<double> linspace(double start, double end, int n){
 
 
 std::vector<double> vector1_ope(std::vector<double> a, std::function<double(double)> func){
-  int size_a = size(a);
+  int size_a = a.size();
   std::vector<double> c(size_a);
   for (int i = 0; i < size_a; i++){
     c[i] = func(a[i]);
@@ -104,8 +106,8 @@ std::vector<double> vector1_ope(std::vector<double> a, std::function<double(doub
 }
 
 std::vector<double> vector2_ope(std::vector<double> a, std::vector<double> b, std::string ope){
-  int size_a = size(a);
-  int size_b = size(b); 
+  int size_a = a.size();
+  int size_b = b.size(); 
   std::vector<double> c(size_a);
   if (size_a != size_b){
     std::cerr << "WARNING: a and b are not of the same size.\n";
@@ -129,7 +131,7 @@ double abs_f(double x){
 }
 
 double max(std::vector<double> vec){
-  int size_vec = size(vec);
+  int size_vec = vec.size();
   double maxval = vec[0];
   for (int i=1; i < size_vec; i++){
     if (vec[i] > maxval){
@@ -140,7 +142,7 @@ double max(std::vector<double> vec){
 }
 
 int argmax(std::vector<double> vec){
-  int size_vec = size(vec);
+  int size_vec = vec.size();
   int maxindex = 0;
   double maxval = vec[maxindex];
   for (int i=1; i < size_vec; i++){
@@ -153,7 +155,7 @@ int argmax(std::vector<double> vec){
 }
 
 int argmin(std::vector<double> vec){
-  int size_vec = size(vec);
+  int size_vec = vec.size();
   int minindex = 0;
   double minval = vec[minindex];
   for (int i=1; i < size_vec; i++){
