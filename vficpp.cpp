@@ -8,7 +8,7 @@
 int main(){
   
   auto started = std::chrono::high_resolution_clock::now();
-
+  //If I add a comment, what happens ?
   const int A = 10;
   const float alpha = 0.5;
   const float beta = 0.9;
